@@ -17,11 +17,6 @@ const PORT = process.env.PORT || 5000;
 
 app.set('trust proxy', 1);
 
-console.log('DATABASE_URL موجود؟', !!process.env.DATABASE_URL);
-if (process.env.DATABASE_URL) {
-    console.log('يبدأ بـ:', process.env.DATABASE_URL.slice(0, 20));
-}
-
 const allowedOrigins = [process.env.FRONTEND_URL, 'http://localhost:5173'].filter(Boolean);
 
 app.use(helmet());
