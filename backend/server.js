@@ -10,6 +10,7 @@ const userRoutes = require('./routes/user');
 const mealsRoutes = require('./routes/meals');
 const weightsRoutes = require('./routes/weights');
 const adminRoutes = require('./routes/admin');
+const aiRoutes = require('./routes/ai');
 const { notFoundHandler, errorHandler } = require('./middleware/errorHandler');
 
 const app = express();
@@ -61,6 +62,7 @@ app.use('/api/user', userRoutes);
 app.use('/api/meals', mealsRoutes);
 app.use('/api/weights', weightsRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/ai', aiRoutes);
 
 app.use(notFoundHandler);
 app.use(errorHandler);
