@@ -1,12 +1,12 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
 const rateLimit = require('express-rate-limit');
-const Anthropic = require('@anthropic-ai/sdk');
+const { GoogleGenAI } = require('@google/genai');
 const authenticateUser = require('../middleware/auth');
 
 const router = express.Router();
 
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 const aiLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
@@ -25,8 +25,7 @@ const MEAL_SCHEMA = {
         fat: { type: 'number', description: 'الدهون بالجرام' },
         calories: { type: 'number', description: 'السعرات الحرارية' }
     },
-    required: ['mealName', 'protein', 'carbs', 'fat', 'calories'],
-    additionalProperties: false
+    required: ['mealName', 'protein', 'carbs', 'fat', 'calories']
 };
 
 router.post(
@@ -45,22 +44,20 @@ router.post(
 
             const { description } = req.body;
 
-            const response = await anthropic.messages.create({
-                model: 'claude-haiku-4-5',
-                max_tokens: 300,
-                system: 'أنت خبير تغذية. يصف المستخدم وجبة بالعربية (قد تتضمن كميات بالجرام أو وحدات منزلية). قدّر بأفضل معرفتك القيم الغذائية التقريبية للوجبة كاملة.',
-                output_config: {
-                    format: { type: 'json_schema', schema: MEAL_SCHEMA }
-                },
-                messages: [{ role: 'user', content: description }]
+            const response = await genAI.models.generateContent({
+                model: 'gemini-2.5-flash',
+                contents: `أنت خبير تغذية. يصف المستخدم وجبة بالعربية (قد تتضمن كميات بالجرام أو وحدات منزلية). قدّر بأفضل معرفتك القيم الغذائية التقريبية للوجبة كاملة.\n\nالوجبة: ${description}`,
+                config: {
+                    responseMimeType: 'application/json',
+                    responseSchema: MEAL_SCHEMA
+                }
             });
 
-            const textBlock = response.content.find((block) => block.type === 'text');
-            if (!textBlock) {
+            if (!response.text) {
                 return res.status(502).json({ message: 'تعذر تحليل الوجبة، حاول صياغة الوصف بشكل مختلف' });
             }
 
-            const macros = JSON.parse(textBlock.text);
+            const macros = JSON.parse(response.text);
             res.json({ macros });
         } catch (err) {
             next(err);
